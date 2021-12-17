@@ -6,12 +6,15 @@ import psycopg2
 import psycopg2.extras as extras
 
 from io import StringIO
+from dotenv import load_dotenv
 
 data_dir = os.path.join(os.getcwd(), "data")
 processed_fname = f"{data_dir}/processed_files.txt"
+load_dotenv()
+
 
 conn = psycopg2.connect(
-    "host=ttsb-db-instance-1.cqwxkcuelzco.us-west-1.rds.amazonaws.com user=postgres port=5432"
+    f"host={os.getenv('HOSTNAME')} user={os.getenv('USER')} port={os.getenv('PORT')} password={os.getenv('SECRET')}"
 )
 conn.set_isolation_level(0)
 
