@@ -14,7 +14,7 @@ load_dotenv()
 
 
 conn = psycopg2.connect(
-    f"host={os.getenv('HOSTNAME')} user={os.getenv('USER')} port={os.getenv('PORT')} password={os.getenv('SECRET')}"
+    f"host={os.getenv('HOSTNAME')} user={os.getenv('USERNAME')} port={os.getenv('PORT')} password={os.getenv('SECRET')}"
 )
 conn.set_isolation_level(0)
 
