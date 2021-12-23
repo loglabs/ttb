@@ -1,4 +1,4 @@
-# TTSB: Tabular Timestamped Benchmarks
+# TTB: Timestamped Tabular Benchmarks
 
 Author: shreyashankar
 
