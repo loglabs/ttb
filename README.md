@@ -1,8 +1,8 @@
-# TTSB: Tabular Time Series Benchmarks
+# TTSB: Tabular Timestamped Benchmarks
 
 Author: shreyashankar
 
-This repository contains helper functions to read and deploy models on data from time series benchmarks. **Work in progress.**
+This repository contains helper functions to read timestamped tabular data. **This is a work in progress.**
 
 ## Data Criteria
 
