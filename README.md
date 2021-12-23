@@ -2,7 +2,7 @@
 
 Author: shreyashankar
 
-This repository contains helper functions to read and deploy models on data from time series benchmarks. Work in progress.
+This repository contains helper functions to read and deploy models on data from time series benchmarks. **Work in progress.**
 
 ## Data Criteria
 
