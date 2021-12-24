@@ -6,7 +6,7 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 setup(
-    name="ttsb",
+    name="ttb",
     version="0.1",
     description="Tabular Time Series Benchmark",
     long_description=README,
