@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 
 import os
 import pandas as pd
@@ -34,9 +34,9 @@ class BaseDataset(ABC):
         self.connectToDB()
 
     def connectToDB(self):
-        load_dotenv()
+        config = dotenv_values(".env")
         self.conn = psycopg2.connect(
-            f"host={os.getenv('HOSTNAME')} user={os.getenv('USERNAME')} port={os.getenv('PORT')} password={os.getenv('SECRET')}"
+            f"host={config.get('HOSTNAME')} user={config.get('USERNAME')} port={config.get('PORT')} password={config.get('SECRET')}"
         )
         self.conn.set_isolation_level(0)
         self.cur = self.conn.cursor()
