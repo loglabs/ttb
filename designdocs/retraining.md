@@ -49,16 +49,15 @@ class Serving(Component):
 ## System Requirements  
 
 ### Functional Requirements
-*List here the functional requirements of the system. Functional requirements are requirements that specify __what__ the system should do and can be thought of as 'the system must do <requirement\>'. Implementation details for each requirement should be addressed in the system design document. An example of a functional requirement would be 'the system utilizes Java version...' This list can become quite extensive and for best practice each requirement should be issued its own unique name, number, and be accompanied by a description.*
+
+* Ability to declare components, before and after run triggers
+* Ability to access history of inputs & outputs in the triggers
+* Ability to refresh other components in the triggers
 
 ### Degign Considerations
 
-
-#### Assumptions
-*In this section describe any assumptions, background, or dependencies of the software, its use, the operational environment, or significant project issues.*
-
-#### Constraints
-*In this section describe any constraints on the system that have a significant impact on the design of the system.*
+* Python API
+* Easy way to test over long periods of time
 
 #### System Environment
 *In this section describe the system environment on which the software will be executing. Include any specific reasons why this system was chosen and if there are any plans to include new sections to the list of current ones.*
