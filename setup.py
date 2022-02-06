@@ -24,7 +24,9 @@ setup(
         "psycopg2-binary",
         "pandas",
         "python-dotenv",
+        "scipy",
         "SQLAlchemy",
+        "wilds",
     ],
     include_package_data=True,
 )
