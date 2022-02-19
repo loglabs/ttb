@@ -20,10 +20,13 @@ setup(
     ],
     packages=find_packages(exclude=["tests"]),
     install_requires=[
+        "cvxpy",
+        "matplotlib",
         "numpy",
         "psycopg2-binary",
         "pandas",
         "python-dotenv",
+        "seaborn",
         "scipy",
         "SQLAlchemy",
         "wilds",
