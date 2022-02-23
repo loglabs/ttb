@@ -37,14 +37,12 @@ def save_to_filename(data: object, filename: str):
     joblib.dump(data, filename)
 
 
-def hadamard_product(arrays: typing.List[np.ndarray]) -> np.ndarray:
-    if len(arrays) == 1:
-        return arrays[0]
+def aggregate_min(arrays: typing.List[np.ndarray], use_cvx: bool=True) -> np.ndarray:
+    res = arrays[0]
 
-    res = arrays[0] * arrays[1]
-    if len(arrays) > 2:
-        for i in range(2, len(arrays)):
-            res = res * arrays[i]
+    for i in range(1, len(arrays)):
+        res =  cp.minimum(res, arrays[i]) if use_cvx else np.minimum(res, arrays[i]) 
+
     return res
 
 
@@ -58,64 +56,81 @@ def create_probabilities(
     domain_matrices: typing.List[np.ndarray],
     n: int,
     T: int,
-    gamma: float = 1000,
-    alpha: float = 1e-3,
-    log_step: int = 100,
+    gamma: float = 0.5,  
+    num_peaks: int = 5,
+    start_max: int = 10, # highest value signal can take to start with
+    log_step: int = 10,
 ):
     m = len(domain_matrices)
     probabilities = []
+    signals = []
 
     prev_s_vectors = [
-        np.random.uniform(size=(mat.shape[1])) for mat in domain_matrices
+        np.random.uniform(low=0, high=start_max, size=mat.shape[1]) for mat in domain_matrices
     ]
-    prev_z = hadamard_product(
-        [mat @ s for mat, s in zip(domain_matrices, prev_s_vectors)]
+    prev_z = aggregate_min(
+        [mat @ s for mat, s in zip(domain_matrices, prev_s_vectors)],
+        use_cvx=False
     )
     prev_p = softmax(prev_z)
+
+    signals.append(prev_s_vectors)
     probabilities.append(prev_p)
+
+    peaks = np.random.choice(n, num_peaks).tolist()
 
     # Iterate
     for t in range(1, T):
         c = np.ones(n)  # TODO(shreyashankar): change this when we do groups
         s_vectors = [cp.Variable(mat.shape[1]) for mat in domain_matrices]
 
-        z = hadamard_product(
+        # z is concave in optimization variable s
+        z = aggregate_min(
             [mat @ s for mat, s in zip(domain_matrices, s_vectors)]
         )
 
-        op_term = prev_p @ (np.log(c) + z - cp.log_sum_exp(z + np.log(c)))
+        # convex alternative to z (take mean instead of min over domain types)
+        pseudo_z = 1/m * cp.sum(
+            [mat @ s for mat, s in zip(domain_matrices, s_vectors)],
+            axis=1
+        )
 
+        # instead of maximizing KL divergence with prev_p (not convex)
+        # we find some entropic distribution p* with which we can minimize KL divergence (convex)
+        peaks.pop(0)
+        peaks.append(np.random.randint(n))
+        p_star = np.zeros(prev_p.shape)
+        p_star[peaks] = 10 
+        p_star = softmax(p_star)
+
+        obj = cp.Minimize(-1 * (p_star @ (np.log(c) + z - cp.log_sum_exp(pseudo_z + np.log(c)))))
+
+        # prevent rapid changes from one timestep to another using L2 norm 
         smoothness_constraints = [
-            float(1 / s_vectors[i].shape[0])
-            * (cp.norm(s_vectors[i] - prev_s_vectors[i], 2) ** 2)
-            <= gamma
+            (1/(s_vectors[i].shape[0] ** 0.5) * cp.norm(s_vectors[i] - prev_s_vectors[i], 2)) <= gamma
             for i in range(m)
         ]
 
         nonnegativity_constraints = [s_vectors[i] >= 0 for i in range(m)]
-
-        nondominating_constraints = [
-            cp.abs(cp.sum(s_vectors[i]) - cp.sum(s_vectors[j])) <= alpha
-            for i in range(m)
-            for j in range(m)
-            if i != j
-        ]
-
+       
         all_constraints = (
             smoothness_constraints
             + nonnegativity_constraints
-            + nondominating_constraints
         )
 
         # Solve the problem
-        prob = cp.Problem(cp.Maximize(op_term), all_constraints)
+        prob = cp.Problem(obj, all_constraints)
         prob.solve()
 
         optimal_value = prob.value
-        curr_z = hadamard_product(
-            [mat @ s.value for mat, s in zip(domain_matrices, s_vectors)]
+
+        curr_z = aggregate_min(
+            [mat @ s.value for mat, s in zip(domain_matrices, s_vectors)],
+            use_cvx=False
         )
         curr_p = softmax(curr_z)
+
+        signals.append([ s.value for s in s_vectors ])
         probabilities.append(curr_p)
         if t % log_step == 0:
             print(f"Iteration {t}: {optimal_value}")
@@ -125,7 +140,7 @@ def create_probabilities(
         prev_z = curr_z
         prev_p = curr_p
 
-    return probabilities
+    return probabilities, signals
 
 
 def create_domain_matrices(
@@ -150,9 +165,10 @@ def create_ordering(
     datasets: list,
     dataset_names: list,
     T: int,
-    gamma: float = 1000,
-    alpha: float = 1e-3,
-    log_step: int = 100,
+    gamma: float = 0.5,  
+    num_peaks: int = 5,
+    start_max: int = 10,
+    log_step: int = 10,
 ):
     assert len(datasets) == len(dataset_names)
 
@@ -162,7 +178,7 @@ def create_ordering(
     num_examples = sum([len(dataset) for dataset in datasets])
 
     probabilities = create_probabilities(
-        domain_matrices, num_examples, T, gamma, alpha, log_step
+        domain_matrices, num_examples, T, gamma=gamma, num_peaks=num_peaks, start_max=start_max, log_step=log_step 
     )
 
     samples = []

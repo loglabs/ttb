@@ -32,9 +32,10 @@ class WILDSDataset(object):
         self,
         name: str,
         T: int,
-        gamma: float = 1,
-        alpha: float = 1e-3,
-        log_step: int = 100,
+        gamma: float = 0.5,  
+        num_peaks: int = 5,
+        start_max: int = 10,
+        log_step: int = 10,
         sampler: typing.Union[str, callable] = "default",
         transform=transforms.Compose([transforms.ToTensor()]),
     ) -> None:
@@ -50,7 +51,8 @@ class WILDSDataset(object):
                 ["train", "test"],
                 T=T,
                 gamma=gamma,
-                alpha=alpha,
+                num_peaks=num_peaks,
+                start_max=start_max,
                 log_step=log_step,
             )
             if sampler == "default"
