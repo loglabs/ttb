@@ -32,7 +32,7 @@ class WILDSDataset(object):
         self,
         name: str,
         T: int,
-        gamma: float = 0.5,  
+        gamma: float = 0.5,
         num_peaks: int = 5,
         start_max: int = 10,
         log_step: int = 10,
@@ -103,8 +103,9 @@ class WILDSDataset(object):
             "split": splits,
         }
         df = pd.DataFrame.from_dict(d)
-        sns.relplot(x="timestep", y="probability", data=df, hue="split")
+        sns.lineplot(x="timestep", y="probability", data=df, hue="split")
         plt.title("Sampling probabilities")
+        plt.rcParams["figure.figsize"] = (20, 4)
         plt.show()
 
     def reset(self) -> None:
