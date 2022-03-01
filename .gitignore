@@ -2,3 +2,6 @@ data/*
 .env
 *__pycache__*
 *.egg-info*
+*.temporary*
+*data.txt
+*.DS_Store*
