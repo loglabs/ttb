@@ -51,3 +51,5 @@ cur.execute("ALTER TABLE taxi_data_copy ADD COLUMN id SERIAL PRIMARY KEY;")
 # Migrate back to taxi_data
 cur.execute("DROP TABLE IF EXISTS taxi_data;")
 cur.execute("ALTER TABLE taxi_data_copy RENAME TO taxi_data;")
+cur.execute("CREATE INDEX ON taxi_data (tpep_pickup_datetime);")
+cur.execute("CREATE INDEX ON taxi_data (tpep_dropoff_datetime);")
