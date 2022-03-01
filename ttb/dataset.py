@@ -9,12 +9,14 @@ import typing
 
 
 class BaseDataset(ABC):
-    supported_datasets = ["taxi_data"]
+    supported_datasets = ["taxi_data", "intel_lab_data"]
     start_cols = {
         "taxi_data": "tpep_pickup_datetime",
+        "intel_lab_data": "reading_timestamp",
     }
     end_cols = {
         "taxi_data": "tpep_dropoff_datetime",
+        "intel_lab_data": "reading_timestamp",
     }
 
     def __init__(
@@ -23,6 +25,10 @@ class BaseDataset(ABC):
         cutoff_date: typing.Union[str, datetime],
         cache_dir: str = None,
     ):
+        if name not in self.supported_datasets:
+            raise ValueError(
+                f"Dataset {name} is not supported. Supported datasets: {self.supported_datasets}"
+            )
         self.name = name
         self.cutoff_date = (
             cutoff_date
@@ -113,7 +119,6 @@ class PandasDataset(BaseDataset):
         Returns:
             pd.DataFrame: Loaded data for the dataset.
         """
-
         start_date = self.cutoff_date - delta
         query = f"SELECT * FROM {self.name} WHERE {self.start_cols[self.name]} >= '{start_date}' AND {self.end_cols[self.name]} < '{self.cutoff_date}';"
         df = pd.read_sql_query(query, self.conn)

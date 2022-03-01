@@ -14,6 +14,7 @@ To be included as a benchmark, the data source must:
 ## Current Data Sources
 
 * [NYC Taxicab Yellow Data](https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page), ingested into a timestamp-indexed table hosted on AWS RDS
+* [Intel Lab Data](http://db.csail.mit.edu/labdata/labdata.html), ingested into a timestamp-indexed table hosted on AWS RDS
 
 ## How To Use
 
