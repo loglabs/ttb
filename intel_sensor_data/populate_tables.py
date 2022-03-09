@@ -18,6 +18,7 @@ conn = psycopg2.connect(
 conn.set_isolation_level(0)
 
 cur = conn.cursor()
+cur.execute("DROP TABLE IF EXISTS intel_lab_data;")
 cur.execute(
     """
     CREATE TABLE IF NOT EXISTS intel_lab_data (
@@ -121,6 +122,7 @@ df["reading_timestamp"] = pd.to_datetime(
 df.drop(columns=["reading_date", "reading_hour"], inplace=True)
 df = df.dropna(subset=["reading_timestamp"])
 df["moteid"] = df["moteid"].astype(int)
+df = df.sort_values(by=["reading_timestamp"], ascending=True)
 cols = [df.columns[-1]] + list(df.columns[:-1])
 df = df[cols]
 print(df.head())
