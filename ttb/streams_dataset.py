@@ -2,7 +2,10 @@ from ttb.create_domain_matrices import name_to_func
 from ttb.utils import create_probabilities
 
 import avalanche
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
 import torch
 
 supported_datasets = name_to_func.keys()
@@ -25,7 +28,7 @@ class STREAMSDataset(object):
         self.dataset, self.domain_matrices = name_to_func[self._name]()
 
         # Create probabilities
-        sampling_probabilities, signals = create_probabilities(
+        self.sampling_probabilities, self.signals = create_probabilities(
             self.domain_matrices,
             T=len(self.dataset) if T is None else T,
         )
@@ -33,7 +36,7 @@ class STREAMSDataset(object):
         # Create permutation
         self.permutation = [
             np.random.choice(len(prob), p=prob)
-            for prob in sampling_probabilities
+            for prob in self.sampling_probabilities
         ]
         self.reset()
 
@@ -121,11 +124,23 @@ class STREAMSDataset(object):
 
         self._step += step_size
 
-    def visualize(self, domain_idx: int, value_idx: int) -> None:
-        # TODO(shreyashankar): implement this
-        # Return plot of p of sampling from the domain_idx-th
-        # domain and value_idx-th value
-        pass
+    def visualize(
+        self, domain_type_index: int = 0, domain_value_indices: list = None
+    ) -> None:
+        if domain_value_indices is None:
+            domain_value_indices = list(
+                range(self.domain_matrices[domain_type_index].shape[1])
+            )
+        for i in domain_value_indices:
+            x = list(range(self.T))
+            y = [self.signals[t][domain_type_index][i] for t in x]
+            plt.plot(x, y, label=f"Value {i}")
+
+        # plt.ylim([-1, 10])
+        plt.title(f"Domain {domain_type_index}")
+        plt.rcParams["figure.figsize"] = (10, 4)
+        plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
+        plt.show()
 
     def __len__(self) -> int:
         return len(self.permutation)
