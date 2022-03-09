@@ -72,7 +72,7 @@ def create_probabilities(
     signals = []
 
     prev_s_vectors = [
-        np.random.uniform(low=0, high=start_max, size=mat.shape[1])
+        [start_max / mat.shape[1]] * mat.shape[1] # initialize to midpoint of range
         for mat in domain_matrices
     ]
     prev_z = aggregate_min(
@@ -110,8 +110,12 @@ def create_probabilities(
         peaks.pop(0)
         peaks.append(np.random.randint(n))
         p_star = np.zeros(prev_p.shape)
-        p_star[peaks] = 10
-        p_star = softmax(p_star)
+
+        if len(peaks) == 1:
+            p_star[peaks[0]] = 1
+        else:
+            p_star[peaks] = start_max
+            p_star = softmax(p_star)
 
         obj = cp.Minimize(
             -1
