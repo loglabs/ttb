@@ -6,6 +6,7 @@ import cvxpy as cp
 import joblib
 import numpy as np
 import os
+import random
 import typing
 
 
@@ -60,16 +61,21 @@ def softmax(x):
 
 def create_probabilities(
     domain_matrices: typing.List[np.ndarray],
-    n: int,
     T: int,
     gamma: float = 0.5,
     num_peaks: int = 5,
     start_max: int = 10,  # highest value signal can take to start with
     log_step: int = 10,
+    seed: int = 42,
 ):
+    n = domain_matrices[0].shape[0]
     m = len(domain_matrices)
     probabilities = []
     signals = []
+
+    # Set seeds
+    np.random.seed(seed)
+    random.seed(seed)
 
     prev_s_vectors = [
         [start_max / mat.shape[1]] * mat.shape[1] # initialize to midpoint of range
@@ -194,11 +200,9 @@ def create_ordering(
     idx_to_group, domain_matrices = create_domain_matrices(
         datasets, dataset_names
     )
-    num_examples = sum([len(dataset) for dataset in datasets])
 
     probabilities, _ = create_probabilities(
         domain_matrices,
-        num_examples,
         T,
         gamma=gamma,
         num_peaks=num_peaks,
