@@ -65,6 +65,7 @@ def create_probabilities(
     gamma: float = 0.5,
     num_peaks: int = 5,
     start_max: int = 10,  # highest value signal can take to start with
+    duration: int = 1,    # how many timesteps each signal value should persist for 
     log_step: int = 10,
     seed: int = 42,
 ):
@@ -91,9 +92,10 @@ def create_probabilities(
     probabilities.append(prev_p)
 
     peaks = np.random.choice(n, num_peaks).tolist()
+    duration_counter = 0
 
     # Iterate
-    for t in range(1, T):
+    for t in range(1, T+1, duration):
         c = np.ones(n)  # TODO(shreyashankar): change this when we do groups
         s_vectors = [cp.Variable(mat.shape[1]) for mat in domain_matrices]
 
@@ -155,8 +157,12 @@ def create_probabilities(
         )
         curr_p = softmax(curr_z)
 
-        signals.append([s.value for s in s_vectors])
-        probabilities.append(curr_p)
+        # signal value should persist for entirety of duration
+        for _ in range(duration):
+            if len(signals) <= T:
+                signals.append([s.value for s in s_vectors])
+                probabilities.append(curr_p)
+
         if t % log_step == 0:
             print(f"Iteration {t}: {optimal_value}")
 
