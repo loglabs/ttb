@@ -68,6 +68,8 @@ def create_probabilities(
     duration: int = 1,    # how many timesteps each signal value should persist for 
     log_step: int = 10,
     seed: int = 42,
+    periodicity_slack: float = 2,
+    periodicity: typing.List[typing.Tuple[int, int]] = []  # tuple of domains and periods
 ):
     n = domain_matrices[0].shape[0]
     m = len(domain_matrices)
@@ -143,7 +145,17 @@ def create_probabilities(
 
         nonnegativity_constraints = [s_vectors[i] >= 0 for i in range(m)]
 
-        all_constraints = smoothness_constraints + nonnegativity_constraints
+        # value of jth value of domain i should be the same as (j-1)th value
+        # 'period' timesteps ago
+        periodic_constraints = []
+
+        for i,period in periodicity:
+            if t > period:
+                periodic_constraints.append(
+                    cp.norm(s_vectors[i] - np.roll(signals[-period][i], 1), 1) <= periodicity_slack 
+                )
+
+        all_constraints = smoothness_constraints + nonnegativity_constraints + periodic_constraints
 
         # Solve the problem
         prob = cp.Problem(obj, all_constraints)
