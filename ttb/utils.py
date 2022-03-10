@@ -174,24 +174,6 @@ def create_probabilities(
     return probabilities, signals
 
 
-def create_domain_matrices(
-    datasets: list, dataset_names: list
-) -> typing.List[np.ndarray]:
-    num_examples = sum([len(dataset) for dataset in datasets])
-    num_datasets = len(datasets)
-    idx_to_group = {}
-
-    A_matrix = np.zeros((num_examples, num_datasets))
-    curr_idx = 0
-    for i, dataset in enumerate(datasets):
-        for j in range(curr_idx, curr_idx + len(dataset)):
-            idx_to_group[j] = (dataset_names[i], j - curr_idx)
-        A_matrix[curr_idx : curr_idx + len(dataset), i] = 1
-        curr_idx += len(dataset)
-
-    return idx_to_group, [A_matrix]
-
-
 def create_ordering(
     datasets: list,
     dataset_names: list,
