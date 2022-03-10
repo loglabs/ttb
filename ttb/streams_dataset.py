@@ -18,6 +18,7 @@ class STREAMSDataset(object):
         T: int = None,
         inference_window: int = 100,
         seed: int = 42,
+        **kwargs
     ) -> None:
         if name not in supported_datasets:
             raise ValueError(f"Dataset {name} is not supported")
@@ -31,6 +32,7 @@ class STREAMSDataset(object):
         self.sampling_probabilities, self.signals = create_probabilities(
             self.domain_matrices,
             T=len(self.dataset) if T is None else T,
+            **kwargs
         )
 
         # Create permutation

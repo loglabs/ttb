@@ -65,8 +65,11 @@ def create_probabilities(
     gamma: float = 0.5,
     num_peaks: int = 5,
     start_max: int = 10,  # highest value signal can take to start with
+    duration: int = 1,    # how many timesteps each signal value should persist for 
     log_step: int = 10,
     seed: int = 42,
+    periodicity_slack: float = 2,
+    periodicity: typing.List[typing.Tuple[int, int]] = []  # tuple of domains and periods
 ):
     n = domain_matrices[0].shape[0]
     m = len(domain_matrices)
@@ -78,7 +81,7 @@ def create_probabilities(
     random.seed(seed)
 
     prev_s_vectors = [
-        np.random.uniform(low=0, high=start_max, size=mat.shape[1])
+        [start_max / mat.shape[1]] * mat.shape[1] # initialize to midpoint of range
         for mat in domain_matrices
     ]
     prev_z = aggregate_min(
@@ -91,9 +94,10 @@ def create_probabilities(
     probabilities.append(prev_p)
 
     peaks = np.random.choice(n, num_peaks).tolist()
+    duration_counter = 0
 
     # Iterate
-    for t in range(1, T):
+    for t in range(1, T+1, duration):
         c = np.ones(n)  # TODO(shreyashankar): change this when we do groups
         s_vectors = [cp.Variable(mat.shape[1]) for mat in domain_matrices]
 
@@ -116,8 +120,12 @@ def create_probabilities(
         peaks.pop(0)
         peaks.append(np.random.randint(n))
         p_star = np.zeros(prev_p.shape)
-        p_star[peaks] = 10
-        p_star = softmax(p_star)
+
+        if len(peaks) == 1:
+            p_star[peaks[0]] = 1
+        else:
+            p_star[peaks] = start_max
+            p_star = softmax(p_star)
 
         obj = cp.Minimize(
             -1
@@ -137,7 +145,17 @@ def create_probabilities(
 
         nonnegativity_constraints = [s_vectors[i] >= 0 for i in range(m)]
 
-        all_constraints = smoothness_constraints + nonnegativity_constraints
+        # value of jth value of domain i should be the same as (j-1)th value
+        # 'period' timesteps ago
+        periodic_constraints = []
+
+        for i,period in periodicity:
+            if t > period:
+                periodic_constraints.append(
+                    cp.norm(s_vectors[i] - np.roll(signals[-period][i], 1), 1) <= periodicity_slack 
+                )
+
+        all_constraints = smoothness_constraints + nonnegativity_constraints + periodic_constraints
 
         # Solve the problem
         prob = cp.Problem(obj, all_constraints)
@@ -151,8 +169,12 @@ def create_probabilities(
         )
         curr_p = softmax(curr_z)
 
-        signals.append([s.value for s in s_vectors])
-        probabilities.append(curr_p)
+        # signal value should persist for entirety of duration
+        for _ in range(duration):
+            if len(signals) <= T:
+                signals.append([s.value for s in s_vectors])
+                probabilities.append(curr_p)
+
         if t % log_step == 0:
             print(f"Iteration {t}: {optimal_value}")
 
@@ -162,24 +184,6 @@ def create_probabilities(
         prev_p = curr_p
 
     return probabilities, signals
-
-
-def create_domain_matrices(
-    datasets: list, dataset_names: list
-) -> typing.List[np.ndarray]:
-    num_examples = sum([len(dataset) for dataset in datasets])
-    num_datasets = len(datasets)
-    idx_to_group = {}
-
-    A_matrix = np.zeros((num_examples, num_datasets))
-    curr_idx = 0
-    for i, dataset in enumerate(datasets):
-        for j in range(curr_idx, curr_idx + len(dataset)):
-            idx_to_group[j] = (dataset_names[i], j - curr_idx)
-        A_matrix[curr_idx : curr_idx + len(dataset), i] = 1
-        curr_idx += len(dataset)
-
-    return idx_to_group, [A_matrix]
 
 
 def create_ordering(
