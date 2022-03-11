@@ -7,6 +7,8 @@ import joblib
 import numpy as np
 import os
 import random
+import torch
+import torchvision.transforms as transforms
 import typing
 
 
@@ -65,11 +67,15 @@ def create_probabilities(
     gamma: float = 0.5,
     num_peaks: int = 5,
     start_max: int = 10,  # highest value signal can take to start with
-    duration: int = 1,    # how many timesteps each signal value should persist for 
+    duration: int = 1,  # how many timesteps each signal value should persist for
     log_step: int = 10,
     seed: int = 42,
     periodicity_slack: float = 2,
-    periodicity: typing.List[typing.Tuple[int, int]] = []  # tuple of domains and periods
+    periodicity: typing.List[
+        typing.Tuple[
+            int, int
+        ]  # change this param to how many cycles istead of period
+    ] = [],  # tuple of domains and periods
 ):
     n = domain_matrices[0].shape[0]
     m = len(domain_matrices)
@@ -81,7 +87,8 @@ def create_probabilities(
     random.seed(seed)
 
     prev_s_vectors = [
-        [start_max / mat.shape[1]] * mat.shape[1] # initialize to midpoint of range
+        [start_max / mat.shape[1]]
+        * mat.shape[1]  # initialize to midpoint of range
         for mat in domain_matrices
     ]
     prev_z = aggregate_min(
@@ -97,7 +104,7 @@ def create_probabilities(
     duration_counter = 0
 
     # Iterate
-    for t in range(1, T+1, duration):
+    for t in range(1, T + 1, duration):
         c = np.ones(n)  # TODO(shreyashankar): change this when we do groups
         s_vectors = [cp.Variable(mat.shape[1]) for mat in domain_matrices]
 
@@ -149,13 +156,18 @@ def create_probabilities(
         # 'period' timesteps ago
         periodic_constraints = []
 
-        for i,period in periodicity:
+        for i, period in periodicity:
             if t > period:
                 periodic_constraints.append(
-                    cp.norm(s_vectors[i] - np.roll(signals[-period][i], 1), 1) <= periodicity_slack 
+                    cp.norm(s_vectors[i] - np.roll(signals[-period][i], 1), 1)
+                    <= periodicity_slack
                 )
 
-        all_constraints = smoothness_constraints + nonnegativity_constraints + periodic_constraints
+        all_constraints = (
+            smoothness_constraints
+            + nonnegativity_constraints
+            + periodic_constraints
+        )
 
         # Solve the problem
         prob = cp.Problem(obj, all_constraints)
@@ -170,13 +182,13 @@ def create_probabilities(
         curr_p = softmax(curr_z)
 
         # signal value should persist for entirety of duration
-        for _ in range(duration):
+        for d in range(duration):
             if len(signals) <= T:
                 signals.append([s.value for s in s_vectors])
                 probabilities.append(curr_p)
 
-        if t % log_step == 0:
-            print(f"Iteration {t}: {optimal_value}")
+            if (t + d) % log_step == 0:
+                print(f"Iteration {t + d}: {optimal_value}")
 
         # Set new prev vectors
         prev_s_vectors = [s_vec.value for s_vec in s_vectors]
@@ -227,3 +239,27 @@ def create_ordering(
         grouped_probs.append(group_probs)
 
     return samples, grouped_probs
+
+
+class FullDataset(torch.utils.data.Dataset):
+    def __init__(
+        self,
+        dataset,
+        transform: transforms.transforms = None,
+        target_transform: transforms.transforms = None,
+    ):
+        self.raw_dataset = dataset
+        self.transform = transform
+        self.target_transform = target_transform
+        self.targets = self.raw_dataset.y_array
+
+    def __len__(self):
+        return len(self.raw_dataset)
+
+    def __getitem__(self, idx):
+        x, y, metadata = self.raw_dataset[idx]
+        if self.transform is not None:
+            x = self.transform(x)
+        if self.target_transform:
+            y = self.target_transform(y)
+        return x, y, metadata

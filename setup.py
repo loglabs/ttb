@@ -22,6 +22,7 @@ setup(
     install_requires=[
         "avalanche-lib",
         "cvxpy",
+        "kaggle",
         "matplotlib",
         "numpy",
         "psycopg2-binary",
