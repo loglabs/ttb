@@ -2,6 +2,7 @@ from ttb.create_domain_matrices import name_to_func
 from ttb.utils import create_probabilities
 
 import avalanche
+import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -18,7 +19,8 @@ class STREAMSDataset(object):
         T: int = None,
         inference_window: int = 100,
         seed: int = 42,
-        **kwargs
+        force_download: bool = False,
+        **kwargs,
     ) -> None:
         if name not in supported_datasets:
             raise ValueError(f"Dataset {name} is not supported")
@@ -26,13 +28,17 @@ class STREAMSDataset(object):
         self._T = T
         self._inference_window = inference_window
         self._seed = seed
-        self.dataset, self.domain_matrices = name_to_func[self._name]()
+        logging.info(f"Creating dataset {name}")
+        self.dataset, self.domain_matrices = name_to_func[self._name](
+            force_download
+        )
 
         # Create probabilities
+        logging.info("Creating probabilities")
         self.sampling_probabilities, self.signals = create_probabilities(
             self.domain_matrices,
             T=len(self.dataset) if T is None else T,
-            **kwargs
+            **kwargs,
         )
 
         # Create permutation
