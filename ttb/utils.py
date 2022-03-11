@@ -198,49 +198,6 @@ def create_probabilities(
     return probabilities, signals
 
 
-def create_ordering(
-    datasets: list,
-    dataset_names: list,
-    T: int,
-    gamma: float = 0.5,
-    num_peaks: int = 5,
-    start_max: int = 10,
-    log_step: int = 10,
-):
-    assert len(datasets) == len(dataset_names)
-
-    idx_to_group, domain_matrices = create_domain_matrices(
-        datasets, dataset_names
-    )
-
-    probabilities, _ = create_probabilities(
-        domain_matrices,
-        T,
-        gamma=gamma,
-        num_peaks=num_peaks,
-        start_max=start_max,
-        log_step=log_step,
-    )
-
-    samples = []
-    grouped_probs = []
-    for prob in probabilities:
-        sample = np.random.choice(len(prob), p=prob)
-        samples.append(idx_to_group[sample])
-
-        curr_idx = 0
-        group_probs = {}
-        for i, dataset in enumerate(datasets):
-            group_probs[dataset_names[i]] = sum(
-                prob[curr_idx : curr_idx + len(dataset)]
-            )
-            curr_idx += len(dataset)
-
-        grouped_probs.append(group_probs)
-
-    return samples, grouped_probs
-
-
 class FullDataset(torch.utils.data.Dataset):
     def __init__(
         self,
