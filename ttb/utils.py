@@ -4,6 +4,7 @@ from datetime import datetime
 
 import cvxpy as cp
 import joblib
+import logging
 import numpy as np
 import os
 import random
@@ -188,7 +189,7 @@ def create_probabilities(
                 probabilities.append(curr_p)
 
             if (t + d) % log_step == 0:
-                print(f"Iteration {t + d}: {optimal_value}")
+                logging.info(f"Iteration {t + d}: {optimal_value}")
 
         # Set new prev vectors
         prev_s_vectors = [s_vec.value for s_vec in s_vectors]
@@ -196,49 +197,6 @@ def create_probabilities(
         prev_p = curr_p
 
     return probabilities, signals
-
-
-def create_ordering(
-    datasets: list,
-    dataset_names: list,
-    T: int,
-    gamma: float = 0.5,
-    num_peaks: int = 5,
-    start_max: int = 10,
-    log_step: int = 10,
-):
-    assert len(datasets) == len(dataset_names)
-
-    idx_to_group, domain_matrices = create_domain_matrices(
-        datasets, dataset_names
-    )
-
-    probabilities, _ = create_probabilities(
-        domain_matrices,
-        T,
-        gamma=gamma,
-        num_peaks=num_peaks,
-        start_max=start_max,
-        log_step=log_step,
-    )
-
-    samples = []
-    grouped_probs = []
-    for prob in probabilities:
-        sample = np.random.choice(len(prob), p=prob)
-        samples.append(idx_to_group[sample])
-
-        curr_idx = 0
-        group_probs = {}
-        for i, dataset in enumerate(datasets):
-            group_probs[dataset_names[i]] = sum(
-                prob[curr_idx : curr_idx + len(dataset)]
-            )
-            curr_idx += len(dataset)
-
-        grouped_probs.append(group_probs)
-
-    return samples, grouped_probs
 
 
 class FullDataset(torch.utils.data.Dataset):

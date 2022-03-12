@@ -70,14 +70,96 @@ def get_iwildcam(force_download: bool = False):
 
     return dataset, [location_matrix, time_matrix]
 
-    # download_path = os.path.join(HOME, DOWNLOAD_PREFIX, "iwildcam")
-    # command = f"kaggle competitions download -c iwildcam-2019-fgvc6 -p {download_path}"
-    # command += " --force" if force_download else ""
 
-    # subprocess.run("kaggle datasets files iwildcam-2019-fgvc6", shell=True)
+def get_civil_comments(force_download: bool = False):
+    download_path = os.path.join(HOME, DOWNLOAD_PREFIX)
+    raw_dataset = get_dataset(
+        dataset="civilcomments", download=True, root_dir=download_path
+    )
+    df = pd.read_csv(
+        os.path.join(
+            download_path, "civilcomments_v1.0", "all_data_with_identities.csv"
+        )
+    )
 
-    # process = subprocess.run(command, shell=True)
-    # print("waiting")
+    all_cols = {
+        "gender_cols": ["male", "female", "transgender", "other_gender"],
+        "sexuality_cols": [
+            "heterosexual",
+            "homosexual_gay_or_lesbian",
+            "bisexual",
+            "other_sexual_orientation",
+        ],
+        "religion_cols": [
+            "christian",
+            "jewish",
+            "muslim",
+            "hindu",
+            "buddhist",
+            "atheist",
+            "other_religion",
+        ],
+        "race_cols": [
+            "black",
+            "white",
+            "asian",
+            "latino",
+            "other_race_or_ethnicity",
+        ],
+        "disability_cols": [
+            "physical_disability",
+            "intellectual_or_learning_disability",
+            "psychiatric_or_mental_illness",
+            "other_disability",
+        ],
+    }
+
+    matrices = []
+    for _, cols in all_cols.items():
+        matrix = (df[cols] >= 0.5).astype(int).values
+        last_col = (matrix.sum(axis=1) == 0).astype(int).reshape(-1, 1)
+        matrix = np.hstack([matrix, last_col])
+        matrices.append(matrix)
+
+    publication_id_matrix = (
+        pd.get_dummies(df.publication_id).astype(int).values
+    )
+    matrices.append(publication_id_matrix)
+
+    dataset = FullDataset(raw_dataset)
+
+    return dataset, matrices
 
 
-name_to_func = {"mnist": get_mnist, "iwildcam": get_iwildcam}
+def get_poverty(force_download: bool = False):
+    download_path = os.path.join(HOME, DOWNLOAD_PREFIX)
+    raw_dataset = get_dataset(
+        dataset="poverty", download=True, root_dir=download_path
+    )
+    df = pd.read_csv(
+        os.path.join(download_path, "poverty_v1.1", "dhs_metadata.csv")
+    )
+
+    urban_matrix = pd.get_dummies(df.urban).astype(int).values
+    country_matrix = pd.get_dummies(df.country).astype(int).values
+    dataset = FullDataset(raw_dataset)
+
+    return dataset, [urban_matrix, country_matrix]
+
+
+# download_path = os.path.join(HOME, DOWNLOAD_PREFIX, "iwildcam")
+# command = f"kaggle competitions download -c iwildcam-2019-fgvc6 -p {download_path}"
+# command += " --force" if force_download else ""
+
+# subprocess.run("kaggle datasets files iwildcam-2019-fgvc6", shell=True)
+
+# process = subprocess.run(command, shell=True)
+# print("waiting")
+
+
+name_to_func = {
+    "mnist": get_mnist,
+    "iwildcam": get_iwildcam,
+    "civilcomments": get_civil_comments,
+    "poverty": get_poverty,
+}
