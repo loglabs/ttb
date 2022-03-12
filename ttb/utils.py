@@ -4,6 +4,7 @@ from datetime import datetime
 
 import cvxpy as cp
 import joblib
+import logging
 import numpy as np
 import os
 import random
@@ -188,7 +189,7 @@ def create_probabilities(
                 probabilities.append(curr_p)
 
             if (t + d) % log_step == 0:
-                print(f"Iteration {t + d}: {optimal_value}")
+                logging.info(f"Iteration {t + d}: {optimal_value}")
 
         # Set new prev vectors
         prev_s_vectors = [s_vec.value for s_vec in s_vectors]

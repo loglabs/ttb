@@ -131,6 +131,22 @@ def get_civil_comments(force_download: bool = False):
     return dataset, matrices
 
 
+def get_poverty(force_download: bool = False):
+    download_path = os.path.join(HOME, DOWNLOAD_PREFIX)
+    raw_dataset = get_dataset(
+        dataset="poverty", download=True, root_dir=download_path
+    )
+    df = pd.read_csv(
+        os.path.join(download_path, "poverty_v1.1", "dhs_metadata.csv")
+    )
+
+    urban_matrix = pd.get_dummies(df.urban).astype(int).values
+    country_matrix = pd.get_dummies(df.country).astype(int).values
+    dataset = FullDataset(raw_dataset)
+
+    return dataset, [urban_matrix, country_matrix]
+
+
 # download_path = os.path.join(HOME, DOWNLOAD_PREFIX, "iwildcam")
 # command = f"kaggle competitions download -c iwildcam-2019-fgvc6 -p {download_path}"
 # command += " --force" if force_download else ""
@@ -145,4 +161,5 @@ name_to_func = {
     "mnist": get_mnist,
     "iwildcam": get_iwildcam,
     "civilcomments": get_civil_comments,
+    "poverty": get_poverty,
 }
