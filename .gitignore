@@ -6,3 +6,5 @@ data/*
 *data.txt
 *.DS_Store*
 *.ipynb_checkpoints*
+*.png
+*.csv

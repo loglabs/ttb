@@ -34,6 +34,9 @@ class TrainTestDataFrameAccessor:
     def get_fit_dates(self) -> tuple[datetime, datetime]:
         return self.x_accessor.get_fit_dates()
 
+    def get_dates_infer(self) -> tuple[tuple[datetime, datetime], ...]:
+        return self.x_accessor.get_dates_infer()
+    
     def get_x_fit(self) -> pd.DataFrame:
         return self.x_accessor.get_df_fit()
 
@@ -118,6 +121,9 @@ class SingleDataFrameAccessor:
 
     def get_df_fit(self) -> pd.DataFrame:
         return self.df_data[self.get_date_indices_(self.date_slice_fit)]
+    
+    def get_dates_infer(self) -> tuple[tuple[datetime, datetime], ...]:
+        return self.date_slices_infer
 
     def get_df_infer_iterable(self) -> Iterable[pd.DataFrame]:
         for date_slice in self.date_slices_infer:

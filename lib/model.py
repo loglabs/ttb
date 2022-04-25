@@ -8,6 +8,7 @@ from alibi_detect.cd import (ChiSquareDrift, ClassifierDrift,
                              SpotTheDiffDrift, TabularDrift)
 from alibi_detect.utils.pytorch.kernels import DeepKernel
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import f1_score
 from torch import nn
 
 # TODO: implement preprocessing for feature reduction in all models
@@ -119,25 +120,25 @@ class SpotTheDiffModel:
         x_infer = x_infer.astype(np.float32)
         return self.model.predict(x_infer)['data']['p_val']
 
-# TODO: come up with good scheme to pass in params to classifieruncertainty
-# model
 @ModelWrapperInterface.register
 class ClassifierUncertaintyModel:
-    def __init__(self, classifier_model = None, train_drift_frac = .7):
+    def __init__(self, classifier_model = None, train_fxn = None, train_drift_frac = .7):
         if classifier_model is None:
             classifier_model = nn.Sequential(
                 nn.Linear(18,10),
                 nn.ReLU(),
                 nn.Linear(10,2))
+        if train_fxn is None:
+            train_fxn = lambda *args: None
+        self.train_fxn = train_fxn
         self.classifier_model = classifier_model
         self.train_drift_frac = train_drift_frac
     def fit(self, x_fit, y_fit):
-        # TODO(wangyujie): must train model, but too complicated for
-        # prototype
         shuffled_indices = np.random.permutation(x_fit.shape[0])
         split_index = round(x_fit.shape[0] * self.train_drift_frac)
         x_fit_class, x_fit_uncertainty = np.split(x_fit, [split_index,])
         y_fit_class, y_fit_uncertainty = np.split(y_fit.reshape(-1), [split_index,])
+        self.train_fxn(self.classifier_model, x_fit_class, y_fit_class)
         x_fit_uncertainty = x_fit_uncertainty.astype(np.float32)
         self.model = ClassifierUncertaintyDrift(
             x_fit_uncertainty, self.classifier_model, preds_type='logits', backend='pytorch')
@@ -152,3 +153,28 @@ class CVMModel:
         self.model = CVMDrift(x_fit)
     def infer(self, x_infer, y_infer) -> float:
         return self.model.predict(x_infer)['data']['p_val'][0]
+
+@ModelWrapperInterface.register
+class OutputClassifierAccuracyBaselineModel:
+    '''
+        Wrapper for sklearn classifier model.
+    '''
+    def __init__(self, model):
+        self.model = model
+    def fit(self, x_fit, y_fit):
+        self.model.fit(x_fit, y_fit.reshape(-1))
+    def infer(self, x_infer, y_infer) -> float:
+        return self.model.score(x_infer, y_infer.reshape(-1))
+
+@ModelWrapperInterface.register
+class OutputClassifierF1ScoreBaselineModel:
+    '''
+        Wrapper for sklearn classifier model.
+    '''
+    def __init__(self, model):
+        self.model = model
+    def fit(self, x_fit, y_fit):
+        self.model.fit(x_fit, y_fit.reshape(-1))
+    def infer(self, x_infer, y_infer) -> float:
+        y_pred = self.model.predict(x_infer)
+        return f1_score(y_infer.reshape(-1), y_pred, average='micro')
