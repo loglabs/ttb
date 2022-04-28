@@ -32,22 +32,19 @@ class ModelWrapperInterface(abc.ABC):
         '''
         pass
 
-@ModelWrapperInterface.register
-class CVMModel:
+class CVMModel(ModelWrapperInterface):
     def fit(self, x_fit, y_fit):
         self.model = CVMDrift(x_fit)
     def infer(self, x_infer, y_infer) -> float:
         return self.model.predict(x_infer)['data']['p_val'][0]
 
-@ModelWrapperInterface.register
-class MMDModel:
+class MMDModel(ModelWrapperInterface):
     def fit(self, x_fit, y_fit):
         self.model = MMDDrift(x_fit)
     def infer(self, x_infer, y_infer) -> float:
         return self.model.predict(x_infer)['data']['p_val']
 
-@ModelWrapperInterface.register
-class TabularModel:
+class TabularModel(ModelWrapperInterface):
     def fit(self, x_fit_annotated, y_fit_annotated):
         '''
             Because TabularModel chooses between KS and Chi-Squared
@@ -66,8 +63,7 @@ class TabularModel:
         x_infer, _ = x_infer_annotated
         return self.model.predict(x_infer)['data']['p_val'][0]
 
-@ModelWrapperInterface.register
-class FETModel:
+class FETModel(ModelWrapperInterface):
     def __init__(self, classifier_model = None, train_drift_frac = .7):
         if classifier_model is None:
             classifier_model = RandomForestClassifier()
@@ -86,8 +82,7 @@ class FETModel:
         x_infer_classified = self.classifier_model.predict(x_infer)
         return self.model.predict(x_infer_classified)['data']['p_val'][0]
 
-@ModelWrapperInterface.register
-class LearnedKernelModel:
+class LearnedKernelModel(ModelWrapperInterface):
     def __init__(self, kernel:DeepKernel):
         self.kernel = kernel
     def fit(self, x_fit, y_fit):
@@ -98,8 +93,7 @@ class LearnedKernelModel:
         x_infer = x_infer.astype(np.float32)
         return self.model.predict(x_infer)['data']['p_val']
 
-@ModelWrapperInterface.register
-class ClassifierDriftModel:
+class ClassifierDriftModel(ModelWrapperInterface):
     def __init__(self, classifier_model:nn.Module):
         self.classifier_model = classifier_model
     def fit(self, x_fit, y_fit):
@@ -111,8 +105,7 @@ class ClassifierDriftModel:
         x_infer = x_infer.astype(np.float32)
         return self.model.predict(x_infer)['data']['p_val']
 
-@ModelWrapperInterface.register
-class SpotTheDiffModel:
+class SpotTheDiffModel(ModelWrapperInterface):
     def fit(self, x_fit, y_fit):
         x_fit = x_fit.astype(np.float32)
         self.model = SpotTheDiffDrift(x_fit, backend='pytorch')
@@ -120,8 +113,7 @@ class SpotTheDiffModel:
         x_infer = x_infer.astype(np.float32)
         return self.model.predict(x_infer)['data']['p_val']
 
-@ModelWrapperInterface.register
-class ClassifierUncertaintyModel:
+class ClassifierUncertaintyModel(ModelWrapperInterface):
     def __init__(self, classifier_model = None, train_fxn = None, train_drift_frac = .7):
         if classifier_model is None:
             classifier_model = nn.Sequential(
@@ -147,15 +139,13 @@ class ClassifierUncertaintyModel:
         return self.model.predict(x_infer)['data']['p_val']
 
 # TODO: track the runtime
-@ModelWrapperInterface.register
-class CVMModel:
+class CVMModel(ModelWrapperInterface):
     def fit(self, x_fit, y_fit):
         self.model = CVMDrift(x_fit)
     def infer(self, x_infer, y_infer) -> float:
         return self.model.predict(x_infer)['data']['p_val'][0]
 
-@ModelWrapperInterface.register
-class OutputClassifierAccuracyBaselineModel:
+class OutputClassifierAccuracyBaselineModel(ModelWrapperInterface):
     '''
         Wrapper for sklearn classifier model.
     '''
@@ -166,8 +156,7 @@ class OutputClassifierAccuracyBaselineModel:
     def infer(self, x_infer, y_infer) -> float:
         return self.model.score(x_infer, y_infer.reshape(-1))
 
-@ModelWrapperInterface.register
-class OutputClassifierF1ScoreBaselineModel:
+class OutputClassifierF1ScoreBaselineModel(ModelWrapperInterface):
     '''
         Wrapper for sklearn classifier model.
     '''
